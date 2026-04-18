@@ -1,11 +1,11 @@
-//IMPORTAZIONE DEI MODULI (Librerie esterne)
-const express = require('express'); //Framework per creare il server web e gestire le rotte
-const fs = require('fs');           //Modulo "File System" per leggere/scrivere file sul computer
-const csv = require('csv-parser');  //Estensione per tradurre i file CSV in oggetti JavaScript
-const xml2js = require('xml2js');   //Estensione per tradurre i file XML in oggetti JavaScript
+//IMPORTAZIONE DEI MODULI (Librerie esterne come il modulo file system, estensione CSV e XML in js)
+const express = require('express'); 
+const fs = require('fs');           
+const csv = require('csv-parser');  
+const xml2js = require('xml2js');   
 
-const app = express(); //Inizializzazione dell'applicazione Express
-const PORT = 5000;     //Definizione della porta su cui il server resterà in ascolto
+const app = express(); 
+const PORT = 5000;     
 
 //MIDDLEWARE STATIC: serve per dire ad Express che tutti i file dentro la cartella 'public'
 //(come index.html e style.css) devono essere accessibili direttamente dal browser.
@@ -20,9 +20,8 @@ app.get('/api/magazzino', async (req, res) => {
         let inventarioTotale = [];
 
         // --- GESTIONE FILE JSON ---
-        //Leggiamo il file come testo e usiamo JSON.parse per trasformarlo in un oggetto lavorabile
+        //Leggiamo il file come testo e usiamo JSON.parse per trasformarlo in un oggetto lavorabile e per ogni prodotto aggiungiamo l'etichetta "JSON"
         const datiJson = JSON.parse(fs.readFileSync('./data/magazzino.json', 'utf8'));
-        //Per ogni prodotto trovato, aggiungiamo l'etichetta "JSON" per riconoscerne la provenienza
         datiJson.forEach(p => inventarioTotale.push({ ...p, fonte: 'JSON' }));
 
         // --- GESTIONE FILE XML ---
@@ -37,7 +36,6 @@ app.get('/api/magazzino', async (req, res) => {
 
         // --- GESTIONE FILE CSV ---
         //Il CSV viene letto tramite uno "Stream" (un flusso di dati).
-        //Questo metodo è più efficiente per file che potrebbero essere molto lunghi.
         fs.createReadStream('./data/magazzino.csv')
             .pipe(csv()) // Trasforma ogni riga del CSV in un oggetto { prodotto, categoria, quantita }
             .on('data', (row) => {
@@ -45,9 +43,8 @@ app.get('/api/magazzino', async (req, res) => {
                 inventarioTotale.push({ ...row, fonte: 'CSV' });
             })
             .on('end', () => {
-                //CALLBACK DI CHIUSURA: Inviamo la risposta al browser solo quando 
-                //il CSV è stato letto completamente. In questo momento inventarioTotale 
-                //contiene tutti i 18 prodotti (6 JSON + 6 XML + 6 CSV).
+                //CALLBACK DI CHIUSURA: Inviamo la risposta al browser solo quando il CSV è stato letto completamente.
+                // inventarioTotale contiene tutti i 18 prodotti 
                 res.json(inventarioTotale);
             });
 
