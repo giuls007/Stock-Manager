@@ -1,64 +1,81 @@
-//IMPORTAZIONE DEI MODULI (Librerie esterne come il modulo file system, estensione CSV e XML in js)
-const express = require('express'); 
-const fs = require('fs');           
-const csv = require('csv-parser');  
-const xml2js = require('xml2js');   
+const express = require('express');
+const fs = require('fs');
+const csv = require('csv-parser');
+const xml2js = require('xml2js');
 
-const app = express(); 
-const PORT = 5000;     
+const app = express();
+const PORT = 5000;
 
-//MIDDLEWARE STATIC: serve per dire ad Express che tutti i file dentro la cartella 'public'
-//(come index.html e style.css) devono essere accessibili direttamente dal browser.
+app.use(express.json());
 app.use(express.static('public'));
 
-//DEFINIZIONE DELLA ROTTA API: /api/magazzino
-//Questa funzione viene richiamata quando il client (HTML) esegue la fetch().
-//Usiamo 'async' perché la lettura dei file (specialmente XML e CSV) è un'operazione asincrona.
-app.get('/api/magazzino', async (req, res) => {
+let fullInventory = []; // Database temporaneo in memoria
+
+//AGGREGATORE DI DATI (ETL):
+//Questa funzione asincrona legge dati da tre formati diversi (JSON, XML, CSV).
+//Ogni record viene arricchito con una proprietà 'fonte' per tracciarne l'origine nel frontend.
+async function loadData() {
+    fullInventory = [];
     try {
-        //Creiamo un contenitore vuoto (Array) dove uniremo i 18 prodotti
-        let inventarioTotale = [];
+        // 1. Caricamento da JSON (Metodo sincrono)
+        if (fs.existsSync('./data/magazzino.json')) {
+            const datiJson = JSON.parse(fs.readFileSync('./data/magazzino.json', 'utf8'));
+            datiJson.forEach(p => fullInventory.push({ ...p, fonte: 'JSON' }));
+        }
 
-        // --- GESTIONE FILE JSON ---
-        //Leggiamo il file come testo e usiamo JSON.parse per trasformarlo in un oggetto lavorabile e per ogni prodotto aggiungiamo l'etichetta "JSON"
-        const datiJson = JSON.parse(fs.readFileSync('./data/magazzino.json', 'utf8'));
-        datiJson.forEach(p => inventarioTotale.push({ ...p, fonte: 'JSON' }));
+        // 2. Caricamento da XML (Richiede parsing asincrono tramite xml2js)
+        if (fs.existsSync('./data/magazzino.xml')) {
+            const datiXml = fs.readFileSync('./data/magazzino.xml', 'utf8');
+            const parser = new xml2js.Parser({ explicitArray: false });
+            const resXml = await parser.parseStringPromise(datiXml);
+            resXml.magazzino.item.forEach(p => fullInventory.push({ ...p, fonte: 'XML' }));
+        }
 
-        // --- GESTIONE FILE XML ---
-        //Leggiamo il file XML come testo grezzo
-        const datiXml = fs.readFileSync('./data/magazzino.xml', 'utf8');
-        //Creiamo un'istanza del parser XML
-        const parser = new xml2js.Parser({ explicitArray: false });
-        //'parseStringPromise' trasforma il testo XML in un oggetto JavaScript (usiamo await per attendere la fine)
-        const resultXml = await parser.parseStringPromise(datiXml);
-        //Navighiamo nella struttura del file (magazzino -> item) e aggiungiamo la fonte "XML"
-        resultXml.magazzino.item.forEach(p => inventarioTotale.push({ ...p, fonte: 'XML' }));
-
-        // --- GESTIONE FILE CSV ---
-        //Il CSV viene letto tramite uno "Stream" (un flusso di dati).
-        fs.createReadStream('./data/magazzino.csv')
-            .pipe(csv()) // Trasforma ogni riga del CSV in un oggetto { prodotto, categoria, quantita }
-            .on('data', (row) => {
-                //Ogni volta che viene letta una riga, la aggiungiamo all'array con la fonte "CSV"
-                inventarioTotale.push({ ...row, fonte: 'CSV' });
-            })
-            .on('end', () => {
-                //CALLBACK DI CHIUSURA: Inviamo la risposta al browser solo quando il CSV è stato letto completamente.
-                // inventarioTotale contiene tutti i 18 prodotti 
-                res.json(inventarioTotale);
+        // 3. Caricamento da CSV (Utilizza stream per gestire file potenzialmente grandi)
+        if (fs.existsSync('./data/magazzino.csv')) {
+            return new Promise((resolve) => {
+                fs.createReadStream('./data/magazzino.csv')
+                    .pipe(csv())
+                    .on('data', (row) => fullInventory.push({ ...row, fonte: 'CSV' }))
+                    .on('end', resolve);
             });
-
+        }
     } catch (err) {
-        //In caso di file mancanti o errori di sintassi nei file dati
-        console.error("Errore nel caricamento del magazzino:", err);
-        res.status(500).send("Errore interno del server");
+        console.error("Errore nel caricamento file:", err);
+    }
+}
+
+// Chiamata iniziale per popolare fullInventory all'avvio del server
+loadData();
+
+//ENDPOINT API: Recupero magazzino
+//Restituisce l'intero array consolidato in formato JSON.
+app.get('/api/magazzino', (req, res) => {
+    res.json(fullInventory);
+});
+
+//ENDPOINT API: Aggiornamento quantità
+//Riceve il nome del prodotto e la variazione (+1 o -1).
+//Implementa una logica di controllo: la quantità non può mai scendere sotto lo zero.
+app.post('/api/update', (req, res) => {
+    const { prodotto, variazione } = req.body;
+    // Ricerca l'oggetto corrispondente nel database in memoria
+    const item = fullInventory.find(i => i.prodotto === prodotto);
+    
+    if (item) {
+        let currentQty = parseInt(item.quantita);
+        let nuovaQta = currentQty + variazione;
+        
+        // Math.max(0, ...) impedisce che un "acquisto" porti il magazzino in negativo
+        item.quantita = Math.max(0, nuovaQta).toString();
+        
+        res.json({ success: true, nuovaQuantita: item.quantita });
+    } else {
+        res.status(404).send("Prodotto non trovato");
     }
 });
 
-//AVVIO DEL SERVER
-//La funzione listen() mette il server in uno stato di attesa.
-//Da questo momento il server risponde se scrivi http://localhost:5000 nel browser.
 app.listen(PORT, () => {
     console.log(`--- SERVER MAGAZZINO ATTIVO ---`);
-    console.log(`Endpoint API: http://localhost:${PORT}/api/magazzino`);
+    console.log(`URL locale: http://localhost:${PORT}/login.html`);
 });

@@ -2,7 +2,7 @@
 
 body { 
     font-family: 'Plus Jakarta Sans', sans-serif; 
-    background-color: #f8f5f0; /* Beige chiarissimo */
+    background-color: #f8f5f0; 
     color: #4a4a4a; 
     margin: 0; 
     padding: 20px; 
@@ -14,6 +14,7 @@ body {
     padding: 0 20px;
 }
 
+/* --- HEADER --- */
 header { 
     text-align: center; 
     margin-bottom: 60px; 
@@ -37,14 +38,59 @@ h1 {
     box-shadow: 0 2px 10px rgba(0,0,0,0.03);
 }
 
-/* Griglia delle Card */
+/* --- PAGINA DI LOGIN --- */
+.login-wrapper {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 80vh;
+}
+
+.login-card {
+    background: white;
+    padding: 40px;
+    border-radius: 24px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+    width: 100%;
+    max-width: 400px;
+    text-align: center;
+}
+
+.login-card select {
+    width: 100%;
+    padding: 12px;
+    margin: 20px 0;
+    border-radius: 12px;
+    border: 1px solid #eee;
+    font-family: inherit;
+    background: #fafafa;
+    color: #4a4a4a;
+}
+
+.btn-login {
+    width: 100%;
+    padding: 15px;
+    border: none;
+    border-radius: 12px;
+    background: #2d2d2d;
+    color: white;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.btn-login:hover {
+    transform: translateY(-2px);
+    background: #444;
+}
+
+/* --- GRIGLIA PRODOTTI --- */
 .movie-grid { 
     display: grid; 
     grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); 
     gap: 30px; 
 }
 
-/* Stile Card */
 .card { 
     background: #ffffff; 
     border-radius: 24px; 
@@ -61,7 +107,7 @@ h1 {
     box-shadow: 0 12px 30px rgba(0,0,0,0.08);
 }
 
-/* Indicatori di formato eleganti */
+/* --- INDICATORI FONTE (BORDI LATERALI) --- */
 .card::before {
     content: "";
     position: absolute;
@@ -75,6 +121,7 @@ h1 {
 .card.csv::before { background: #a6c0e0; }  /* Blu polvere */
 .card.xml::before { background: #a6e0bd; }  /* Verde salvia */
 
+/* --- DETTAGLI CARD --- */
 .category { 
     font-size: 0.75rem; 
     text-transform: uppercase; 
@@ -91,6 +138,25 @@ h3 {
     color: #1a1a1a;
 }
 
+.source-tag { 
+    position: absolute; 
+    top: 20px; 
+    right: 20px; 
+    font-size: 0.6rem; 
+    font-weight: 800; 
+    color: #ffffff;
+    background: #d0d0d0; 
+    padding: 4px 8px;
+    border-radius: 6px;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+}
+
+.card.json .source-tag { background: #e0c9a6; }
+.card.csv .source-tag { background: #a6c0e0; }
+.card.xml .source-tag { background: #a6e0bd; }
+
+/* --- STOCK E AZIONI --- */
 .stock-container {
     display: flex;
     align-items: center;
@@ -108,31 +174,44 @@ h3 {
     color: #2d2d2d;
 }
 
-/* Badge critico per scorte basse */
 .low-stock .stock-value {
     color: #d9534f;
 }
-/* Etichetta del formato posizionata in alto a destra */
-.source-tag { 
-    position: absolute; 
-    top: 20px; 
-    right: 20px; 
-    font-size: 0.6rem; 
-    font-weight: 800; 
-    color: #ffffff;
-    background: #d0d0d0; /* Grigio neutro di base */
-    padding: 4px 8px;
-    border-radius: 6px;
-    letter-spacing: 0.5px;
-    text-transform: uppercase;
+
+/* --- PULSANTI INTERATTIVI --- */
+.btn-action {
+    width: 100%;
+    border: none;
+    padding: 12px;
+    border-radius: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    margin-top: 15px;
+    font-family: inherit;
+    transition: all 0.3s ease;
 }
 
-/* Colori specifici per il tag in base alla fonte (opzionale, per richiamare il bordo) */
-.card.json .source-tag { background: #e0c9a6; }
-.card.csv .source-tag { background: #a6c0e0; }
-.card.xml .source-tag { background: #a6e0bd; }
+.btn-admin {
+    background-color: #a6e0bd; /* Verde salvia */
+    color: #2d5a3f;
+}
 
-/* Aggiungiamo un po' di spazio nel contenuto per non toccare il tag */
+.btn-client {
+    background-color: #2d2d2d;
+    color: white;
+}
+
+.btn-action:hover:not(:disabled) {
+    opacity: 0.8;
+    transform: scale(1.02);
+}
+
+.btn-action:disabled {
+    background-color: #eee;
+    color: #bbb;
+    cursor: not-allowed;
+}
+
 .content {
     padding-top: 10px;
 }

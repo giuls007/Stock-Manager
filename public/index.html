@@ -1,76 +1,95 @@
-<!DOCTYPE html>
-<html lang="it">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Stock M</title>
-    <link rel="stylesheet" href="style.css">
-</head>
-<body>
-    <div class="app-wrapper">
-        <header>
-            <h1>Magazzino Alimentare</h1>
-            <p id="info">Caricamento prodotti in corso...</p>
-        </header>
-        
-        <div id="grid" class="movie-grid"></div>
-    </div>
+<script>
+        //SICUREZZA LATO CLIENT:
+        //Prima di caricare la pagina, verifichiamo se l'utente ha effettuato il login.
+        //Se il ruolo non è presente nel localStorage, viene riportato alla pagina di accesso.
+        const role = localStorage.getItem('userRole');
+        if (!role) {
+            window.location.replace('login.html');
+        }
 
-    <script>
-        //FUNZIONE ASINCRONA: getInventory
-        //Scopo: Recuperare i dati dal server e costruire l'interfaccia grafica.
-        //Utilizza 'async' perché deve attendere una risposta dalla rete (operazione non istantanea).
+        // Personalizza il titolo aggiungendo il ruolo recuperato dalla sessione locale
+        document.getElementById('welcome-title').innerText += role === 'amministratore' ? ' (Admin)' : ' (Catalogo)';
+
+        //RECUPERO DATI (FETCH):
+        //Funzione principale che interroga l'endpoint '/api/magazzino' del server.
+        //Viene richiamata all'avvio e ogni volta che una scorta viene aggiornata.
         async function getInventory() {
             try {
-                //1. FETCH: Effettua una richiesta HTTP GET verso l'endpoint del server
                 const res = await fetch('/api/magazzino');
-                
-                //2. PARSING: Converte la risposta grezza del server in un array di oggetti JavaScript
                 const items = await res.json();
                 
-                //3. AGGIORNAMENTO UI: Modifica il testo nell'header con il numero totale di prodotti
                 document.getElementById('info').innerText = `${items.length} articoli totali monitorati`;
-                
                 const grid = document.getElementById('grid');
-                grid.innerHTML = ''; //Svuota la griglia per evitare duplicati in caso di ricaricamento
+                grid.innerHTML = ''; 
                 
-                //4. CICLO FOR-EACH: Itera su ogni prodotto ricevuto dall'array 'items'
                 items.forEach(p => {
-                    //Creazione dinamica di un elemento 'div' per la card
                     const card = document.createElement('div');
-                    
-                    //Logica di controllo scorte: trasforma la stringa in numero per il confronto
                     const quantitaNum = parseInt(p.quantita);
-                    const isLow = quantitaNum < 25 ? 'low-stock' : '';
                     
-                    //Assegnazione classi: serve per applicare lo stile CSS specifico (es: bordo colorato per formato)
+                    // Logica visiva: se la scorta è < 25, viene aggiunta una classe CSS per l'allerta
+                    const isLow = quantitaNum < 25 ? 'low-stock' : '';
                     card.className = `card ${p.fonte.toLowerCase()} ${isLow}`;
                     
-                    //Iniezione del contenuto HTML nella card usando i Template Literals (`...`)
+                    //LOGICA RUOLI:
+                    //Se Admin: il pulsante incrementa (+1) per rifornire.
+                    //Se Cliente: il pulsante decrementa (-1) per acquistare, ma viene disabilitato se il prodotto è a 0.
+                    let actionButton = '';
+                    if (role === 'amministratore') {
+                        actionButton = `<button class="btn-action btn-admin" onclick="updateStock('${p.prodotto}', 1)">+ Incrementa Scorta</button>`;
+                    } else {
+                        const isOutOfStock = quantitaNum <= 0;
+                        actionButton = `
+                            <button class="btn-action btn-client" 
+                                    onclick="updateStock('${p.prodotto}', -1)" 
+                                    ${isOutOfStock ? 'disabled' : ''}>
+                                ${isOutOfStock ? 'Esaurito' : 'Compra Ora'}
+                            </button>`;
+                    }
+
+                    // Riempimento dinamico della card con i dati provenienti dal server
                     card.innerHTML = `
                         <span class="source-tag">${p.fonte}</span>
                         <div class="content">
                             <span class="category">${p.categoria}</span>
                             <h3>${p.prodotto}</h3>
+                            ${actionButton}
                         </div>
                         <div class="stock-container">
                             <span class="stock-label">${isLow ? '⚠️ SCORTA BASSA' : 'Disponibilità'}</span>
                             <span class="stock-value">${p.quantita} pz</span>
                         </div>
                     `;
-                    //Aggiunta fisica della card al contenitore grid nel DOM
                     grid.appendChild(card);
                 });
             } catch (error) {
-                //Gestione errori: se il server è spento o il file è corrotto, avvisa l'utente
-                console.error("Errore nel caricamento:", error);
-                document.getElementById('info').innerText = "Errore di connessione al magazzino";
+                console.error("Errore:", error);
+                document.getElementById('info').innerText = "Errore nel caricamento dati.";
             }
         }
-        
-        // --- RICHIAMO DELLA FUNZIONE ---
-        //La funzione viene eseguita qui per popolare la pagina all'avvio
+
+        //AGGIORNAMENTO SCORTE:
+        //Invia una richiesta POST al server con il nome del prodotto e la variazione (+1 o -1).
+        //Se l'operazione ha successo, riesegue getInventory() per aggiornare i numeri a video.
+        async function updateStock(productName, change) {
+            try {
+                const res = await fetch('/api/update', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ prodotto: productName, variazione: change })
+                });
+                if (res.ok) {
+                    getInventory(); 
+                }
+            } catch (err) {
+                alert("Errore durante l'aggiornamento");
+            }
+        }
+
+        function logout() {
+            localStorage.removeItem('userRole');
+            window.location.replace('login.html');
+        }
+
+        // Entry point: avvia il caricamento dei dati non appena il DOM è pronto
         getInventory();
     </script>
-</body>
-</html>

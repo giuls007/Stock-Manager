@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stock Manager - Accesso</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .login-wrapper { display: flex; justify-content: center; align-items: center; height: 80vh; }
+        .login-card { background: white; padding: 40px; border-radius: 24px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); width: 100%; max-width: 400px; text-align: center; }
+        select, input { width: 100%; padding: 12px; margin: 10px 0; border-radius: 12px; border: 1px solid #eee; font-family: inherit; background: #fafafa; box-sizing: border-box; }
+        #pass-field { display: none; } 
+    </style>
+</head>
+<body>
+    <div class="login-wrapper">
+        <div class="login-card">
+            <h1>Stock Manager</h1>
+            <p id="info">Effettua l'accesso per gestire le scorte</p>
+            
+            <select id="role" onchange="togglePassword()">
+                <option value="cliente">Cliente</option>
+                <option value="amministratore">Amministratore</option>
+            </select>
+
+            <div id="pass-field">
+                <input type="password" id="password" placeholder="Inserisci Password Admin">
+            </div>
+
+            <button class="btn-login" onclick="login()">Entra nel Magazzino</button>
+        </div>
+    </div>
+
+    <script>
+        //INTERFACCIA REATTIVA:
+        //Mostra il campo password solo se nel menu a tendina è selezionato "Amministratore".
+        //Questa funzione viene richiamata dall'evento 'onchange' del tag <select>.
+        function togglePassword() {
+            const role = document.getElementById('role').value;
+            document.getElementById('pass-field').style.display = (role === 'amministratore') ? 'block' : 'none';
+        }
+
+        //LOGICA DI AUTENTICAZIONE:
+        //Se l'utente è un cliente, l'accesso è libero.
+        //Se è un amministratore, deve inserire la password corretta (amministratore1234).
+        //Salva la scelta nel localStorage per mantenere la sessione nelle altre pagine.
+        function login() {
+            const role = document.getElementById('role').value;
+            const password = document.getElementById('password').value;
+
+            if (role === 'amministratore') {
+                if (password === 'amministratore1234') {
+                    localStorage.setItem('userRole', 'amministratore');
+                    window.location.href = 'index.html';
+                } else {
+                    alert('Password Amministratore errata!');
+                }
+            } else {
+                localStorage.setItem('userRole', 'cliente');
+                window.location.href = 'index.html'; 
+            }
+        }
+    </script>
+</body>
+</html>
