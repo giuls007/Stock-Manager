@@ -1,7 +1,30 @@
-<script>
-        //SICUREZZA LATO CLIENT:
-        //Prima di caricare la pagina, verifichiamo se l'utente ha effettuato il login.
-        //Se il ruolo non è presente nel localStorage, viene riportato alla pagina di accesso.
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stock Manager - Magazzino</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="app-wrapper">
+        <header>
+            <div style="text-align: right; margin-bottom: 20px;">
+                <button onclick="logout()" class="btn-logout">Esci dal profilo</button>
+            </div>
+            <h1 id="welcome-title">Magazzino Alimentare</h1>
+            <p id="info">Caricamento prodotti in corso...</p>
+        </header>
+        
+        <div id="grid" class="movie-grid"></div>
+    </div>
+
+    <script>
+        /**
+         * SICUREZZA LATO CLIENT:
+         * Prima di caricare la pagina, verifichiamo se l'utente ha effettuato il login.
+         * Se il ruolo non è presente nel localStorage, viene riportato alla pagina di accesso.
+         */
         const role = localStorage.getItem('userRole');
         if (!role) {
             window.location.replace('login.html');
@@ -10,9 +33,11 @@
         // Personalizza il titolo aggiungendo il ruolo recuperato dalla sessione locale
         document.getElementById('welcome-title').innerText += role === 'amministratore' ? ' (Admin)' : ' (Catalogo)';
 
-        //RECUPERO DATI (FETCH):
-        //Funzione principale che interroga l'endpoint '/api/magazzino' del server.
-        //Viene richiamata all'avvio e ogni volta che una scorta viene aggiornata.
+        /**
+         * RECUPERO DATI (FETCH):
+         * Funzione principale che interroga l'endpoint '/api/magazzino' del server.
+         * Viene richiamata all'avvio e ogni volta che una scorta viene aggiornata.
+         */
         async function getInventory() {
             try {
                 const res = await fetch('/api/magazzino');
@@ -30,9 +55,11 @@
                     const isLow = quantitaNum < 25 ? 'low-stock' : '';
                     card.className = `card ${p.fonte.toLowerCase()} ${isLow}`;
                     
-                    //LOGICA RUOLI:
-                    //Se Admin: il pulsante incrementa (+1) per rifornire.
-                    //Se Cliente: il pulsante decrementa (-1) per acquistare, ma viene disabilitato se il prodotto è a 0.
+                    /**
+                     * LOGICA RUOLI:
+                     * Se Admin: il pulsante incrementa (+1) per rifornire.
+                     * Se Cliente: il pulsante decrementa (-1) per acquistare, ma viene disabilitato se il prodotto è a 0.
+                     */
                     let actionButton = '';
                     if (role === 'amministratore') {
                         actionButton = `<button class="btn-action btn-admin" onclick="updateStock('${p.prodotto}', 1)">+ Incrementa Scorta</button>`;
@@ -67,9 +94,11 @@
             }
         }
 
-        //AGGIORNAMENTO SCORTE:
-        //Invia una richiesta POST al server con il nome del prodotto e la variazione (+1 o -1).
-        //Se l'operazione ha successo, riesegue getInventory() per aggiornare i numeri a video.
+        /**
+         * AGGIORNAMENTO SCORTE:
+         * Invia una richiesta POST al server con il nome del prodotto e la variazione (+1 o -1).
+         * Se l'operazione ha successo, riesegue getInventory() per aggiornare i numeri a video.
+         */
         async function updateStock(productName, change) {
             try {
                 const res = await fetch('/api/update', {
@@ -93,3 +122,22 @@
         // Entry point: avvia il caricamento dei dati non appena il DOM è pronto
         getInventory();
     </script>
+    
+    <style>
+        .btn-logout {
+            background: #fff;
+            border: 1px solid #ddd;
+            padding: 8px 18px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 0.8rem;
+            transition: all 0.2s;
+        }
+        .btn-logout:hover {
+            background: #f0f0f0;
+            border-color: #bbb;
+        }
+    </style>
+</body>
+</html>
