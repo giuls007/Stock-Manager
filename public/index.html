@@ -20,24 +20,20 @@
     </div>
 
     <script>
-        /**
-         * SICUREZZA LATO CLIENT:
-         * Prima di caricare la pagina, verifichiamo se l'utente ha effettuato il login.
-         * Se il ruolo non è presente nel localStorage, viene riportato alla pagina di accesso.
-         */
+         //SICUREZZA LATO CLIENT:
+         //Prima di caricare la pagina, verifichiamo se l'utente ha effettuato il login.
+         //Se il ruolo non è presente nel localStorage, viene riportato alla pagina di accesso.
         const role = localStorage.getItem('userRole');
         if (!role) {
             window.location.replace('login.html');
         }
 
-        // Personalizza il titolo aggiungendo il ruolo recuperato dalla sessione locale
+        //Personalizza il titolo aggiungendo il ruolo recuperato dalla sessione locale
         document.getElementById('welcome-title').innerText += role === 'amministratore' ? ' (Admin)' : ' (Catalogo)';
 
-        /**
-         * RECUPERO DATI (FETCH):
-         * Funzione principale che interroga l'endpoint '/api/magazzino' del server.
-         * Viene richiamata all'avvio e ogni volta che una scorta viene aggiornata.
-         */
+         //RECUPERO DATI (FETCH):
+         //Funzione principale che interroga l'endpoint '/api/magazzino' del server.
+         //Viene richiamata all'avvio e ogni volta che una scorta viene aggiornata.
         async function getInventory() {
             try {
                 const res = await fetch('/api/magazzino');
@@ -51,15 +47,13 @@
                     const card = document.createElement('div');
                     const quantitaNum = parseInt(p.quantita);
                     
-                    // Logica visiva: se la scorta è < 25, viene aggiunta una classe CSS per l'allerta
+                    //Logica visiva: se la scorta è < 25, viene aggiunta una classe CSS per l'allerta
                     const isLow = quantitaNum < 25 ? 'low-stock' : '';
                     card.className = `card ${p.fonte.toLowerCase()} ${isLow}`;
                     
-                    /**
-                     * LOGICA RUOLI:
-                     * Se Admin: il pulsante incrementa (+1) per rifornire.
-                     * Se Cliente: il pulsante decrementa (-1) per acquistare, ma viene disabilitato se il prodotto è a 0.
-                     */
+                     //LOGICA RUOLI:
+                     //Se Admin: il pulsante incrementa (+1) per rifornire.
+                     //Se Cliente: il pulsante decrementa (-1) per acquistare, ma viene disabilitato se il prodotto è a 0.
                     let actionButton = '';
                     if (role === 'amministratore') {
                         actionButton = `<button class="btn-action btn-admin" onclick="updateStock('${p.prodotto}', 1)">+ Incrementa Scorta</button>`;
@@ -73,7 +67,7 @@
                             </button>`;
                     }
 
-                    // Riempimento dinamico della card con i dati provenienti dal server
+                    //Riempimento dinamico della card con i dati provenienti dal server
                     card.innerHTML = `
                         <span class="source-tag">${p.fonte}</span>
                         <div class="content">
@@ -94,11 +88,9 @@
             }
         }
 
-        /**
-         * AGGIORNAMENTO SCORTE:
-         * Invia una richiesta POST al server con il nome del prodotto e la variazione (+1 o -1).
-         * Se l'operazione ha successo, riesegue getInventory() per aggiornare i numeri a video.
-         */
+        //AGGIORNAMENTO SCORTE:
+        //Invia una richiesta POST al server con il nome del prodotto e la variazione (+1 o -1).
+        //Se l'operazione ha successo, riesegue getInventory() per aggiornare i numeri a video.
         async function updateStock(productName, change) {
             try {
                 const res = await fetch('/api/update', {
@@ -119,7 +111,7 @@
             window.location.replace('login.html');
         }
 
-        // Entry point: avvia il caricamento dei dati non appena il DOM è pronto
+        //Entry point: avvia il caricamento dei dati non appena il DOM è pronto
         getInventory();
     </script>
     
